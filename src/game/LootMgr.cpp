@@ -882,7 +882,7 @@ bool Loot::IsLootedForAll() const
     return true;
 }
 
-bool Loot::CanLoot(Player const* player, bool onlyRightCheck /*= false*/)
+bool Loot::CanLoot(Player const* player)
 {
     ObjectGuid const& playerGuid = player->GetObjectGuid();
 
@@ -891,8 +891,8 @@ bool Loot::CanLoot(Player const* player, bool onlyRightCheck /*= false*/)
     if (itr == m_ownerSet.end())
         return false;
 
-    // only check if the player is on the loot list
-    if (onlyRightCheck)
+    // all player that have right too loot have right to loot dropped money
+    if (m_gold)
         return true;
 
     // is already looted?
@@ -1027,9 +1027,13 @@ void Loot::SetPlayerIsNotLooting(Player* player)
 
 void Loot::Release(Player* player)
 {
+    bool updateClients = false;
     // the owner of the loot released it
-    if (player->GetObjectGuid() == m_currentLooterGuid)
+    if (!m_isReleased && player->GetObjectGuid() == m_currentLooterGuid)
+    {
         m_isReleased = true;
+        updateClients = true;
+    }
 
     switch (m_guidTarget.GetHigh())
     {
@@ -1196,6 +1200,11 @@ void Loot::Release(Player* player)
                     {
                         SendReleaseForAll();
                         creature->SetLootStatus(CREATURE_LOOT_STATUS_LOOTED);
+                    }
+                    else if (updateClients)
+                    {
+                        // player have released the corpse and some loot still available, we need to resend loot flags for each players to provide them remaininig loot access
+                        ForceLootAnimationCLientUpdate();
                     }
                     break;
                 }

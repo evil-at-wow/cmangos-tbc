@@ -132,7 +132,6 @@ private:
     Loot*                 m_loot;
     uint32                m_itemSlot;
     RollVoteMask          m_voteMask;
-    uint32                m_voteCount;
     time_t                m_endTime;
 };
 typedef UNORDERED_MAP<uint32, GroupLootRoll> GroupLootRollMap;
@@ -275,7 +274,7 @@ public:
     void AddItem(LootStoreItem const& item);
     void AddItem(uint32 _itemid, uint32 _count, uint32 _randomSuffix, int32 _randomPropertyId);             // used in item.cpp to explicitly load a saved item
     bool AutoStore(Player* player, bool broadcast = false, uint32 bag = NULL_BAG, uint32 slot = NULL_SLOT);
-    bool CanLoot(Player const* player, bool onlyRightCheck = false);
+    bool CanLoot(Player const* player);
     void ShowContentTo(Player* plr);
     void Update();
     bool IsChanged() { return m_isChanged; }
