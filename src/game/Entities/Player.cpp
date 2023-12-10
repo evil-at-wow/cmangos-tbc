@@ -18834,6 +18834,21 @@ bool Player::BuyItemFromVendor(ObjectGuid vendorGuid, uint32 item, uint8 count, 
     data << uint32(count);
     GetSession()->SendPacket(data);
 
+    // Audit log for the bought item.
+    {
+        static SqlStatementID auditBuyItem;
+
+        SqlStatement auditStatement = CharacterDatabase.CreateStatement(auditBuyItem, "INSERT INTO character_audit_vendor_buy (time, player_guid, item_entry, item_count, source_guid) VALUES (?, ?, ?, ?, ?)");
+
+        auditStatement.addUInt64(sWorld.GetGameTime());
+        auditStatement.addUInt32(GetGUIDLow());
+        auditStatement.addUInt32(item);
+        auditStatement.addUInt32(count);
+        auditStatement.addUInt64(vendorGuid);
+
+        auditStatement.Execute();
+    }
+
     SendNewItem(pItem, totalCount, true, false);
 
     return crItem->maxcount != 0;

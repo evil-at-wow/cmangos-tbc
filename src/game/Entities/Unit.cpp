@@ -1230,7 +1230,45 @@ void Unit::Kill(Unit* killer, Unit* victim, DamageEffectType damagetype, SpellEn
         }
     }
     else                                                // Killed creature
+    {
         JustKilledCreature(killer, static_cast<Creature*>(victim), responsiblePlayer);
+
+        // Audit log the kill if it was killed by a player.
+        if (responsiblePlayer)
+        {
+            static SqlStatementID auditCreatureKill;
+
+            SqlStatement auditStatement = CharacterDatabase.CreateStatement(auditCreatureKill, "INSERT INTO character_audit_kill (time, player_guid, creature_guid) VALUES (?, ?, ?)");
+
+            auto killTime = sWorld.GetGameTime();
+            auto killGUID = static_cast<uint64>(victim->GetObjectGuid());
+
+            if (tapperGroup)
+            {
+                for ( auto&& memberSlot : tapperGroup->GetMemberSlots())
+                {
+                    // See also Group::RewardGroupAtKill()
+                    Player* player = sObjectMgr.GetPlayer(memberSlot.guid);
+                    if (player && player->IsAtGroupRewardDistance(victim))
+                    {
+                        auditStatement.addUInt64(killTime);
+                        auditStatement.addUInt32(memberSlot.guid.GetCounter());
+                        auditStatement.addUInt64(killGUID);
+                        auditStatement.Execute();
+                    }
+                }
+            }
+            else
+            {
+                assert(tapper);
+
+                auditStatement.addUInt64(killTime);
+                auditStatement.addUInt32(tapper->GetGUIDLow());
+                auditStatement.addUInt64(killGUID);
+                auditStatement.Execute();
+            }
+        }
+    }
 
     // stop combat
     DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "DealDamageAttackStop");

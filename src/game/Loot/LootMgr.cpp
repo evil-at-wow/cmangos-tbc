@@ -1999,6 +1999,26 @@ InventoryResult Loot::SendItem(Player* target, LootItem* lootItem, bool sendErro
         {
             Item* newItem = target->StoreNewItem(dest, lootItem->itemId, true, lootItem->randomPropertyId);
 
+            // Audit log for new item.
+            {
+                static SqlStatementID auditLootItem;
+
+                SqlStatement auditStatement = CharacterDatabase.CreateStatement(auditLootItem, "INSERT INTO character_audit_loot (time, player_guid, item_entry, item_randompropertyid, item_count, source_guid, loot_type) VALUES (?, ?, ?, ?, ?, ?, ?)");
+
+                auditStatement.addUInt64(sWorld.GetGameTime());
+                auditStatement.addUInt32(target->GetGUIDLow());
+                auditStatement.addUInt32(lootItem->itemId);
+                auditStatement.addUInt32(lootItem->randomPropertyId);
+                auditStatement.addUInt32(lootItem->count);
+                if (m_guidTarget.IsItem())
+                    auditStatement.addUInt64(static_cast<uint64>(m_guidTarget) | static_cast<uint64>(m_itemTarget->GetEntry()) << 24);
+                else
+                    auditStatement.addUInt64(m_guidTarget);
+                auditStatement.addUInt32(m_lootType);
+
+                auditStatement.Execute();
+            }
+            
             if (lootItem->freeForAll)
             {
                 NotifyItemRemoved(target, lootItem->lootSlot);
@@ -2093,7 +2113,29 @@ bool Loot::AutoStore(Player* player, bool broadcast /*= false*/, uint32 bag /*= 
             lootItem->allowedGuid.clear();
 
         Item* pItem = player->StoreNewItem(dest, lootItem->itemId, true, lootItem->randomPropertyId);
+
+        // Audit log for new item.
+        {
+            static SqlStatementID auditLootItem;
+
+            SqlStatement auditStatement = CharacterDatabase.CreateStatement(auditLootItem, "INSERT INTO character_audit_loot (time, player_guid, item_entry, item_randompropertyid, item_count, source_guid, loot_type) VALUES (?, ?, ?, ?, ?, ?, ?)");
+
+            auditStatement.addUInt64(sWorld.GetGameTime());
+            auditStatement.addUInt32(player->GetGUIDLow());
+            auditStatement.addUInt32(lootItem->itemId);
+            auditStatement.addUInt32(lootItem->randomPropertyId);
+            auditStatement.addUInt32(lootItem->count);
+            if (m_guidTarget.IsItem())
+                auditStatement.addUInt64(static_cast<uint64>(m_guidTarget) | static_cast<uint64>(m_itemTarget->GetEntry()) << 24);
+            else            
+                auditStatement.addUInt64(m_guidTarget);
+            auditStatement.addUInt32(m_lootType);
+            
+            auditStatement.Execute();
+        }
+
         player->SendNewItem(pItem, lootItem->count, false, false, broadcast);
+
         m_isChanged = true;
     }
 
@@ -2195,11 +2237,31 @@ void Loot::SendGold(Player* player)
     {
         uint32 money_per_player = uint32(m_gold / (m_ownerSet.size()));
 
+        static SqlStatementID auditLootGold;
+
+        SqlStatement auditStatement = CharacterDatabase.CreateStatement(auditLootGold, "INSERT INTO character_audit_gold (time, player_guid, money, source_guid, loot_type) VALUES (?, ?, ?, ?, ?)");
+
+        auto lootTime = sWorld.GetGameTime();
+
         for (auto itr : m_ownerSet)
         {
             Player* plr = sObjectMgr.GetPlayer(itr);
             if (!plr || !plr->GetSession())
                 continue;
+
+            // Audit log for gold.
+            {
+                auditStatement.addUInt64(lootTime);
+                auditStatement.addUInt32(plr->GetGUIDLow());
+                auditStatement.addUInt32(money_per_player);
+                if (m_guidTarget.IsItem())
+                    auditStatement.addUInt64(static_cast<uint64>(m_guidTarget) | static_cast<uint64>(m_itemTarget->GetEntry()) << 24);
+                else
+                    auditStatement.addUInt64(m_guidTarget);
+                auditStatement.addUInt32(m_lootType);
+
+                auditStatement.Execute();
+            }
 
             plr->ModifyMoney(money_per_player);
 
@@ -2211,6 +2273,24 @@ void Loot::SendGold(Player* player)
     }
     else
     {
+        // Audit log for gold.
+        {
+            static SqlStatementID auditLootGold;
+
+            SqlStatement auditStatement = CharacterDatabase.CreateStatement(auditLootGold, "INSERT INTO character_audit_gold (time, player_guid, money, source_guid, loot_type) VALUES (?, ?, ?, ?, ?)");
+
+            auditStatement.addUInt64(sWorld.GetGameTime());
+            auditStatement.addUInt32(player->GetGUIDLow());
+            auditStatement.addUInt32(m_gold);
+            if (m_guidTarget.IsItem())
+                auditStatement.addUInt64(static_cast<uint64>(m_guidTarget) | static_cast<uint64>(m_itemTarget->GetEntry()) << 24);
+            else
+                auditStatement.addUInt64(m_guidTarget);
+            auditStatement.addUInt32(m_lootType);
+
+            auditStatement.Execute();
+        }
+
         player->ModifyMoney(m_gold);
 
         if (m_guidTarget.IsItem())
