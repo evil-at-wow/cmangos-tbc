@@ -2679,6 +2679,12 @@ void Player::GiveXP(uint32 xp, Creature* victim, float groupRate)
     if (level >= GetMaxAttainableLevel())
         return;
 
+    // no XP if the player's level is one of the frozen ones
+    if (level == sWorld.getConfig(CONFIG_UINT32_PLAYER_NOXP_LEVEL1) ||
+        level == sWorld.getConfig(CONFIG_UINT32_PLAYER_NOXP_LEVEL2) ||
+        level == sWorld.getConfig(CONFIG_UINT32_PLAYER_NOXP_LEVEL3))
+        return;
+
     // handle SPELL_AURA_MOD_XP_PCT auras
     Unit::AuraList const& ModXPPctAuras = GetAurasByType(SPELL_AURA_MOD_XP_PCT);
     for (auto ModXPPctAura : ModXPPctAuras)
