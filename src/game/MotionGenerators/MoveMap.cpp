@@ -21,22 +21,35 @@
 #include "Entities/Creature.h"
 #include "MotionGenerators/MoveMap.h"
 #include "MoveMapSharedDefines.h"
+#include <atomic>
+
+namespace
+{
+    // MMapFactory
+    std::atomic<MMAP::MMapManager*> gMMapManager { nullptr };
+    std::mutex gMMapMutex;
+}
 
 namespace MMAP
 {
-    // ######################## MMapFactory ########################
-    // our global singleton copy
-    MMapManager* g_MMapManager = nullptr;
-
     // stores list of mapids which do not use pathfinding
     std::set<uint32>* g_mmapDisabledIds = nullptr;
 
-    MMapManager* MMapFactory::createOrGetMMapManager()
+    MMapManager& MMapFactory::getMMapManager()
     {
-        if (g_MMapManager == nullptr)
-            g_MMapManager = new MMapManager();
+        MMapManager* instance = gMMapManager.load(std::memory_order_acquire);
+        if (!instance)
+        {
+            std::lock_guard<std::mutex> lock(gMMapMutex);
+            instance = gMMapManager.load(std::memory_order_relaxed);
+            if (!instance)
+            {
+                instance = new MMapManager();
+                gMMapManager.store(instance, std::memory_order_release);
+            }
+        }
 
-        return g_MMapManager;
+        return *instance;
     }
 
     void MMapFactory::preventPathfindingOnMaps(const char* ignoreMapIds)
@@ -87,10 +100,11 @@ namespace MMAP
     void MMapFactory::clear()
     {
         delete g_mmapDisabledIds;
-        delete g_MMapManager;
-
         g_mmapDisabledIds = nullptr;
-        g_MMapManager = nullptr;
+
+        std::lock_guard<std::mutex> lock(gMMapMutex);
+        delete gMMapManager.load();
+        gMMapManager = nullptr;
     }
 
     bool MMapFactory::IsPathfindingForceEnabled(const Unit* unit)

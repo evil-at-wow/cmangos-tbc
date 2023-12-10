@@ -43,8 +43,7 @@ PathFinder::PathFinder(const Unit* owner, bool ignoreNormalization) :
 
     if (MMAP::MMapFactory::IsPathfindingEnabled(m_sourceUnit->GetMapId(), m_sourceUnit))
     {
-        MMAP::MMapManager* mmap = MMAP::MMapFactory::createOrGetMMapManager();
-        m_defaultNavMeshQuery = mmap->GetNavMeshQuery(m_sourceUnit->GetMapId(), m_sourceUnit->GetInstanceId());
+        m_defaultNavMeshQuery = MMAP::MMapFactory::getMMapManager().GetNavMeshQuery(m_sourceUnit->GetMapId(), m_sourceUnit->GetInstanceId());
     }
 
     createFilter();
@@ -59,13 +58,13 @@ void PathFinder::SetCurrentNavMesh()
 {
     if (MMAP::MMapFactory::IsPathfindingEnabled(m_sourceUnit->GetMapId(), m_sourceUnit))
     {
-        MMAP::MMapManager* mmap = MMAP::MMapFactory::createOrGetMMapManager();
+        MMAP::MMapManager& mmap = MMAP::MMapFactory::getMMapManager();
         if (GenericTransport* transport = m_sourceUnit->GetTransport())
-            m_navMeshQuery = mmap->GetModelNavMeshQuery(transport->GetDisplayId());
+            m_navMeshQuery = mmap.GetModelNavMeshQuery(transport->GetDisplayId());
         else
         {
             if (m_defaultMapId != m_sourceUnit->GetMapId())
-                m_defaultNavMeshQuery = mmap->GetNavMeshQuery(m_sourceUnit->GetMapId(), m_sourceUnit->GetInstanceId());
+                m_defaultNavMeshQuery = mmap.GetNavMeshQuery(m_sourceUnit->GetMapId(), m_sourceUnit->GetInstanceId());
 
             m_navMeshQuery = m_defaultNavMeshQuery;
         }

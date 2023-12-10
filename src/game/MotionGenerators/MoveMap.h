@@ -121,18 +121,17 @@ namespace MMAP
             std::mutex m_modelsMutex;
     };
 
-    // static class
+
     // holds all mmap global data
     // access point to MMapManager singleton
-    class MMapFactory
+    namespace MMapFactory
     {
-        public:
-            static MMapManager* createOrGetMMapManager();
-            static void clear();
-            static void preventPathfindingOnMaps(const char* ignoreMapIds);
-            static bool IsPathfindingEnabled(uint32 mapId, const Unit* unit);
-            static bool IsPathfindingForceEnabled(const Unit* unit);
-            static bool IsPathfindingForceDisabled(const Unit* unit);
+        MMapManager& getMMapManager();
+        void clear();
+        void preventPathfindingOnMaps(const char* ignoreMapIds);
+        bool IsPathfindingEnabled(uint32 mapId, const Unit* unit);
+        bool IsPathfindingForceEnabled(const Unit* unit);
+        bool IsPathfindingForceDisabled(const Unit* unit);
     };
 }
 

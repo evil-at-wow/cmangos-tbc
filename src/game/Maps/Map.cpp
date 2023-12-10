@@ -58,7 +58,7 @@ Map::~Map()
     i_data = nullptr;
 
     // unload instance specific navigation data
-    MMAP::MMapFactory::createOrGetMMapManager()->unloadMapInstance(m_TerrainData->GetMapId(), GetInstanceId());
+    MMAP::MMapFactory::getMMapManager().unloadMapInstance(m_TerrainData->GetMapId(), GetInstanceId());
 
     // release reference count
     if (m_TerrainData->Release())

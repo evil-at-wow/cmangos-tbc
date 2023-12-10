@@ -718,7 +718,7 @@ TerrainInfo::~TerrainInfo()
             delete m_GridMap[k];
 
     m_vmgr.unloadMap(m_mapId);
-    MMAP::MMapFactory::createOrGetMMapManager()->unloadMap(m_mapId);
+    MMAP::MMapFactory::getMMapManager().unloadMap(m_mapId);
 }
 
 GridMap* TerrainInfo::Load(const uint32 x, const uint32 y, bool mapOnly /*= false*/)
@@ -784,7 +784,7 @@ void TerrainInfo::CleanUpGrids(const uint32 diff)
                 m_vmgr.unloadMap(m_mapId, x, y);
 
                 // unload mmap...
-                MMAP::MMapFactory::createOrGetMMapManager()->unloadMap(m_mapId, x, y);
+                MMAP::MMapFactory::getMMapManager().unloadMap(m_mapId, x, y);
             }
         }
     }
@@ -1235,7 +1235,7 @@ GridMap* TerrainInfo::GetGrid(const float x, const float y, bool loadOnlyMap /*=
 GridMap* TerrainInfo::LoadMapAndVMap(const uint32 x, const uint32 y, bool mapOnly /*= false*/)
 {
     if ((m_GridMaps[x][y] && mapOnly)
-        || (VMAP::VMapFactory::GetVMapManager().IsTileLoaded(m_mapId, x, y) && MMAP::MMapFactory::createOrGetMMapManager()->IsMMapIsLoaded(m_mapId, x, y)))
+        || (VMAP::VMapFactory::GetVMapManager().IsTileLoaded(m_mapId, x, y) && MMAP::MMapFactory::getMMapManager().IsMMapIsLoaded(m_mapId, x, y)))
     {
         // nothing to load here
         return m_GridMaps[x][y];
@@ -1290,10 +1290,10 @@ GridMap* TerrainInfo::LoadMapAndVMap(const uint32 x, const uint32 y, bool mapOnl
         }
     }
 
-    if (!MMAP::MMapFactory::createOrGetMMapManager()->IsMMapIsLoaded(m_mapId, x, y))
+    if (!MMAP::MMapFactory::getMMapManager().IsMMapIsLoaded(m_mapId, x, y))
     {
         // load navmesh
-        MMAP::MMapFactory::createOrGetMMapManager()->loadMap(m_mapId, x, y);
+        MMAP::MMapFactory::getMMapManager().loadMap(m_mapId, x, y);
     }
 
     if (m_GridMaps[x][y])
